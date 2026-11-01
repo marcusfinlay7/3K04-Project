@@ -1,0 +1,9 @@
+{
+  "name": "Technical fault resolved",
+  "adc_id": "ADC-02",
+  "steps": [
+    {"action": "reconnect"},
+    {"action": "fault"},
+    {"action": "repair"}
+  ]
+}

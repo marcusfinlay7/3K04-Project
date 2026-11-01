@@ -1,0 +1,7 @@
+{
+  "name": "Reject invalid inventory",
+  "adc_id": "ADC-01",
+  "steps": [
+    {"action": "invalid_inventory", "medication": "Ibuprofen", "quantity": -5}
+  ]
+}

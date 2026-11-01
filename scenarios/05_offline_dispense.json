@@ -1,0 +1,10 @@
+{
+  "name": "Offline dispense queued",
+  "adc_id": "ADC-01",
+  "steps": [
+    {"action": "reconnect"},
+    {"action": "set_inventory", "medication": "Paracetamol", "quantity": 12},
+    {"action": "disconnect"},
+    {"action": "dispense", "medication": "Paracetamol", "quantity": 1}
+  ]
+}

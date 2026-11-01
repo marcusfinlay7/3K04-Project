@@ -1,0 +1,8 @@
+{
+  "name": "Technical fault and alarm",
+  "adc_id": "ADC-02",
+  "steps": [
+    {"action": "reconnect"},
+    {"action": "fault"}
+  ]
+}

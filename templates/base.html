@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}ADC Monitoring{% endblock %}</title>
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#202b35;background:#f7f8fa}
+*{box-sizing:border-box}body{margin:0}header{background:#243547;color:white;padding:16px 4%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+header a{color:white;text-decoration:none;margin-right:14px}header small{color:#d3e0e9}main{max-width:1180px;margin:24px auto;padding:0 18px}
+h1{font-size:25px;margin:0 0 10px}h2{font-size:19px;margin:22px 0 12px}p{line-height:1.5}.muted{color:#647080}.panel{background:white;border:1px solid #d9dfe5;border-radius:7px;padding:18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;background:white;font-size:14px}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #e1e5e9;vertical-align:top}th{background:#f1f4f6;color:#344a59}tr:hover td{background:#fafbfc}
+button,.btn{border:1px solid #b5c3cd;border-radius:5px;background:white;color:#203548;padding:8px 12px;cursor:pointer;text-decoration:none;font:inherit;font-size:13px}
+button:hover,.btn:hover{background:#edf1f5}.primary{background:#29465d;color:white;border-color:#29465d}.primary:hover{background:#385f78}
+input,select{border:1px solid #b9c6cc;border-radius:4px;padding:9px;font:inherit;max-width:100%}label{display:block;font-weight:bold;margin:10px 0 5px;font-size:13px}
+.inline{display:inline-block;margin:3px 4px 3px 0}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.pill{display:inline-block;border:1px solid #b8c4cb;border-radius:12px;padding:3px 9px;font-size:12px;background:#f2f5f7}
+.warning{border-color:#c47b37;background:#fff6e9}.danger{border-color:#c45a5a;background:#fff0f0}.notice{padding:9px;background:#eff4f7;margin:12px 0;border:1px solid #d5e0e8;border-radius:5px}
+.scroll{overflow-x:auto}.flex{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:15px}.flex>.panel{margin:0}
+@media(max-width:600px){th,td{padding:8px 5px;font-size:12px}main{margin:14px auto}}
+</style></head><body>
+<header><div><strong>Hospital Monitoring System</strong></div>
+{% if employee_id %}<nav><a href="{{ url_for('home') }}">Cabinets</a>{% if can('view_reports') %}<a href="{{ url_for('report') }}">Reports</a>{% endif %}
+<small>{{ role }} ({{ employee_id }})</small>
+<form class="inline" method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button>Log out</button></form></nav>{% endif %}</header>
+<main>{% for message in get_flashed_messages() %}<div class="notice">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main></body></html>

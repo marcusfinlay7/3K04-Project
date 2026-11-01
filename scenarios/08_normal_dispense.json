@@ -1,0 +1,9 @@
+{
+  "name": "Dispensing event and history",
+  "adc_id": "ADC-01",
+  "steps": [
+    {"action": "reconnect"},
+    {"action": "set_inventory", "medication": "Paracetamol", "quantity": 16},
+    {"action": "dispense", "medication": "Paracetamol", "quantity": 1}
+  ]
+}

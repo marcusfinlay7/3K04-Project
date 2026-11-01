@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Reports | Monitoring{% endblock %}
+{% block content %}
+<h1>Event history</h1>
+<div class="panel scroll">
+  <table>
+    <thead><tr><th>ADC</th><th>Time (Eastern)</th><th>Type</th><th>Description</th><th>Medication</th><th>Quantity</th><th>Employee</th></tr></thead>
+    <tbody>
+      {% for r in records %}
+      <tr>
+        <td>{{ r.adc_id }}</td>
+        <td>{{ format_dt(r.occurred_at) }}</td>
+        <td>{{ r.event_type }}</td>
+        <td>{{ r.description }}</td>
+        <td>{{ r.medication or '—' }}</td>
+        <td>{{ r.quantity if r.quantity is not none else '—' }}</td>
+        <td>{{ r.employee_id or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not records %}<p>No events recorded.</p>{% endif %}
+</div>
+{% endblock %}
