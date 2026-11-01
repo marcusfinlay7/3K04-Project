@@ -2,13 +2,13 @@
 
 ## Open the application
 
-Use **Python 3.11 with Tkinter**. Keep all 13 application `.py` files together. Open a terminal in this project folder and run:
+Use **Python 3.11 with Tkinter**. All 13 application `.py` files live together in `ADC/`, separate from the other group's implementation. From the repository root, run:
 
 ```powershell
-python gui.py
+python ADC/gui.py
 ```
 
-On Windows, `py -3.11 gui.py` also works if Python is installed through the launcher. No third-party packages or separate HMS program are needed. `Emma's Starter Code.py` is the preserved original; `gui.py` starts the new application.
+If your terminal is already inside `ADC/`, run `python gui.py`. On Windows, `py -3.11 ADC/gui.py` also works from the repository root if Python is installed through the launcher. No third-party packages or separate HMS program are needed. `Emma's Starter Code.py` remains at the repository root as the preserved original; `ADC/gui.py` starts the new application.
 
 **Tester login: `99999`. This is the only Tester ID.** Enter just the ID; there is no password or role selection. Tester can use every role's actions and the fault/HMS test controls, while still obeying safety checks, stock limits and login lockout.
 
