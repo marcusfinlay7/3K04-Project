@@ -22,6 +22,7 @@ from event_logger import EventLogger
 
 class ModeManager:
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Start in Normal mode and define which actions each mode permits.
     def __init__(self, logger: EventLogger, on_change: Callable = None):
         self._mode = "Normal"
         self._logger = logger
@@ -35,14 +36,17 @@ class ModeManager:
         }
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Connect the public check that must approve leaving a restrictive mode.
     def setSafetyCheck(self, check: Callable[[], bool]) -> None:
         """Wire the hardware/fault guard; missing guard prevents permissive transitions."""
         self._safe_to_leave = check
 
+    # Return the cabinet's current operating mode.
     def getMode(self) -> str:
         """Return the current mode string; no state change."""
         return self._mode
 
+    # Apply an allowed, safe mode transition and notify logging and the controller.
     def setMode(self, mode: str) -> bool:
         """Request Normal, Maintenance or Fault; return whether accepted.
 
@@ -64,6 +68,7 @@ class ModeManager:
             self._on_change(previous, mode)
         return True
 
+    # Check the named action against the current mode's permitted actions.
     def isOperationAllowed(self, operation: str) -> bool:
         """Return whether the named operation is permitted in this mode.
 

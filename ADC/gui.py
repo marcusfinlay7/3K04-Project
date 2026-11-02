@@ -31,6 +31,7 @@ class LogWindow:
     """Append-only views of the same audit records; never reset the reader's scroll."""
 
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Build either one complete-log pane or separate activity and communication panes.
     def __init__(self, parent: tk.Tk, controller: ADCController, split: bool):
         self._controller = controller
         self._split = split
@@ -60,6 +61,7 @@ class LogWindow:
         self.refresh()
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Append unseen log entries and follow new text only when the reader enables it.
     def refresh(self) -> None:
         """Refresh presentation through Controller's public read operations; return None."""
         for event in self._controller.getDisplayEvents():
@@ -84,6 +86,7 @@ class HMSWindow:
     """Show each actual send attempt and its exact reply, including failed retries."""
 
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Build the transmission table, exact-packet display and waiting-message controls.
     def __init__(self, parent: tk.Tk, controller: ADCController):
         self._controller = controller
         self._entries = {}
@@ -116,6 +119,7 @@ class HMSWindow:
         self.refresh()
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Update communication status and transmission rows, following the newest row if enabled.
     def refresh(self) -> None:
         """Refresh presentation through Controller's public read operations; return None."""
         status = self._controller.getStatus()["communication"]
@@ -138,12 +142,14 @@ class HMSWindow:
             self._showSelected()
 
     # PRIVATE IMPLEMENTATION: only this class calls the helpers below.
+    # Replace the read-only packet details with the supplied display text.
     def _showText(self, text: str) -> None:
         self._details.configure(state="normal")
         self._details.delete("1.0", "end")
         self._details.insert("1.0", text)
         self._details.configure(state="disabled")
 
+    # Display the selected transmission's exact sent packet, actual reply and result.
     def _showSelected(self, event=None) -> None:
         selected = self._table.selection()
         if not selected:
@@ -161,6 +167,7 @@ class HMSWindow:
             text += json.dumps(json.loads(entry["sent"]["payload"]), indent=2)
         self._showText(text)
 
+    # Pause automatic following and display data packets still awaiting a valid ACK.
     def _showPending(self) -> None:
         self._follow.set(False)
         pending = self._controller.getPendingMessages()
@@ -177,6 +184,7 @@ class ADCApp:
     """The main window signs in users and performs cabinet operations."""
 
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Build login and cabinet screens, connect button callbacks, and schedule periodic updates.
     def __init__(self, root: tk.Tk, controller: ADCController | None = None):
         self._root = root
         if controller is None:
@@ -256,15 +264,18 @@ class ADCApp:
         self._id_entry.focus_set()
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Show the result of the latest user operation in the main cabinet window.
     def displayMessage(self, message: str) -> None:
         """Display supplied feedback text without changing business state; return None."""
         self._notice.set(message)
 
+    # Show an alarm message using the red notification banner.
     def displayAlert(self, message: str) -> None:
         """Display a supplied alarm message; no Python exception is raised."""
         self._alarm.set("ALARM - " + message)
         self._alarm_label.configure(background="#ffe1df", foreground="#9c1c12")
 
+    # Ask the user for text and return an empty string if they cancel.
     def getUserInput(self, prompt: str) -> str:
         """Prompt for text; return the entered string or an empty string on cancellation."""
         result = simpledialog.askstring("ADC", prompt, parent=self._root)
@@ -272,6 +283,7 @@ class ADCApp:
             return ""
         return result
 
+    # Cancel GUI updates, close auxiliary windows, log out and destroy the main window.
     def close(self) -> None:
         """Cancel this UI's timer, close its windows and request logout; return None."""
         if self._after_id is not None:
@@ -281,17 +293,20 @@ class ADCApp:
         self._root.destroy()
 
     # PRIVATE IMPLEMENTATION: only this class calls the helpers below.
+    # Submit the entered ID, clear the input field and redraw the appropriate screen.
     def _login(self) -> None:
         self._closeWindows()
         self._controller.login(self._user_id.get())
         self._user_id.set("")
         self._refresh()
 
+    # Close auxiliary windows, end the session and return to the login screen.
     def _logout(self) -> None:
         self._closeWindows()
         self._controller.logout()
         self._refresh()
 
+    # Remember the selected table row's medicine ID and display its name.
     def _selectMedicine(self, event=None) -> None:
         selected = self._inventory.selection()
         if selected:
@@ -299,25 +314,32 @@ class ADCApp:
             name = self._inventory.item(selected[0], "values")[0]
             self._selection_label.set("Selected: " + name)
 
+    # Read and confirm the requested quantity, then ask the controller to dispense or replenish.
     def _transfer(self, operation: str) -> None:
+        # Convert the quantity field to a number. Invalid text becomes None so the
+        # controller can reject and log the attempt through its normal validation.
         try:
             quantity = int(self._quantity.get())
         except ValueError:
             quantity = None
         if quantity is not None:
+            # Let the user cancel before submitting a numeric request.
             selected = self._selection_label.get()
             if not messagebox.askyesno("Confirm", f"{operation.capitalize()} {quantity} unit(s)?\n{selected}", parent=self._root):
                 return
+        # The controller makes all permission, stock and safety decisions.
         if operation == "dispense":
             self._controller.dispense(self._medication.get(), quantity)
         else:
             self._controller.replenish(self._medication.get(), quantity)
         self._refresh()
 
+    # Run a maintenance action and refresh the displayed results.
     def _run(self, operation, *args) -> None:
         operation(*args)
         self._refresh()
 
+    # Open the requested log view, or bring its existing window to the front.
     def _openLog(self, split: bool) -> None:
         key = "log"
         if split:
@@ -327,12 +349,14 @@ class ADCApp:
             return
         self._windows[key] = LogWindow(self._root, self._controller, split)
 
+    # Open the HMS message inspector, or bring its existing window to the front.
     def _openHMS(self) -> None:
         if "hms" in self._windows and self._windows["hms"].window.winfo_exists():
             self._windows["hms"].window.lift()
             return
         self._windows["hms"] = HMSWindow(self._root, self._controller)
 
+    # Build the technician's repair/restart/closure controls, or reuse the open window.
     def _openMaintenance(self) -> None:
         if self._maintenance_window is not None and self._maintenance_window.winfo_exists():
             self._maintenance_window.lift()
@@ -356,6 +380,7 @@ class ADCApp:
         ttk.Label(frame, textvariable=self._notice, wraplength=600).pack(fill="x", pady=15)
         self._refresh()
 
+    # Build controls for injecting cabinet and HMS problems, or reuse the open test window.
     def _openTests(self) -> None:
         if self._test_window is not None and self._test_window.winfo_exists():
             self._test_window.lift()
@@ -379,6 +404,7 @@ class ADCApp:
         self._fault_choice = tk.StringVar(value="Jammed drawer")
         ttk.Combobox(fault_frame, textvariable=self._fault_choice, values=list(fault_names), state="readonly", width=35).pack(side="left")
 
+        # Translate the selected problem label into the matching software or hardware test action.
         def inject_fault():
             fault = fault_names[self._fault_choice.get()]
             if fault == "software_error":
@@ -414,12 +440,16 @@ class ADCApp:
         ttk.Label(frame, textvariable=self._test_status, wraplength=650).pack(fill="x", pady=8)
         self._refresh()
 
+    # Pass a test choice to the controller, which checks Tester permission, then refresh.
     def _simulate(self, action: str, value: str | bool = "") -> None:
         self._controller.simulate(action, value)
         self._refresh()
 
+    # Redraw login or cabinet information and refresh any open auxiliary windows.
     def _refresh(self) -> None:
         status = self._controller.getStatus()
+        # 1. A signed-out session sees only login feedback. Remove old inventory
+        # and close auxiliary windows so the previous user's data is not displayed.
         if status["userId"] is None:
             self._closeWindows()
             self._content.pack_forget()
@@ -433,6 +463,7 @@ class ADCApp:
                 self._login_label.configure(background=self._root.cget("background"), foreground="black")
             self._login_message.set(message)
             return
+        # 2. A signed-in session sees cabinet status and the current alarm banner.
         self._login_frame.pack_forget()
         self._content.pack(fill="both", expand=True)
         self._status.set(f"{status['role']} - ID {status['userId']}    |    Mode: {status['mode']}")
@@ -446,6 +477,7 @@ class ADCApp:
         else:
             self._alarm.set("No active alarms")
             self._alarm_label.configure(background="#e7f0e7", foreground="#244d29")
+        # 3. Update existing medicine rows in place to preserve the user's selection.
         for record in self._controller.getInventory():
             item = record["medicationId"]
             values = (record["name"], record["quantity"], record["capacity"])
@@ -456,6 +488,8 @@ class ADCApp:
         if not self._inventory.selection() and self._inventory.get_children():
             self._inventory.selection_set(self._inventory.get_children()[0])
             self._selectMedicine()
+        # 4. Show controls appropriate to the role. The controller still checks
+        # authorization and mode when clicked; visible buttons do not grant permission.
         for action in ("dispense", "replenish"):
             if action in status["actions"]:
                 self._buttons[action].pack(side="left", padx=5)
@@ -474,11 +508,13 @@ class ADCApp:
             else:
                 self._buttons[key].pack_forget()
         self.displayMessage(status["message"])
+        # 5. Refresh open log/message windows and forget ones the user has closed.
         for key, viewer in list(self._windows.items()):
             if viewer.window.winfo_exists():
                 viewer.refresh()
             else:
                 del self._windows[key]
+        # 6. Refresh repair diagnostics and test settings only when those windows exist.
         if self._maintenance_window is not None and self._maintenance_window.winfo_exists():
             problems = self._controller.getFaults()
             lines = [f"Cabinet mode: {status['mode']}"]
@@ -503,11 +539,13 @@ class ADCApp:
                 connection = "disconnected"
             self._test_status.set(f"Simulated cable: {connection}. Use the Maintenance window to repair cabinet problems.")
 
+    # Run controller checks, refresh the GUI, and schedule the next update without sleeping.
     def _poll(self) -> None:
         self._controller.tick()
         self._refresh()
         self._after_id = self._root.after(GUI_POLL_MS, self._poll)
 
+    # Close and forget every log, HMS, maintenance and test window.
     def _closeWindows(self) -> None:
         for viewer in self._windows.values():
             if viewer.window.winfo_exists():
@@ -520,6 +558,7 @@ class ADCApp:
         self._test_window = None
 
 
+# Create the GUI and start its event loop; report invalid startup data and exit.
 def main() -> None:
     """Start Tk; report invalid startup data and exit rather than run with bad records."""
     root = tk.Tk()

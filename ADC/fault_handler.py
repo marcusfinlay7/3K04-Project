@@ -32,6 +32,7 @@ class FaultHandler:
                               "medication_mismatch", "cabinet_closure", "software_error", "inventory_uncertain"})
 
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Connect fault handling to hardware, mode, logging and permission/notification callbacks.
     def __init__(self, mode: ModeManager, logger: EventLogger,
                  hardware: HardwareInterface, can_recover: Callable[[], bool],
                  notify: Callable, clock: Callable = time.monotonic,
@@ -49,11 +50,13 @@ class FaultHandler:
         self._alarms = {}
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Store a visible notification and log its activation; this is not an exception.
     def raiseAlarm(self, alarmId: str, description: str) -> None:
         """An alarm is a visible notification that something needs attention."""
         self._alarms[alarmId] = description
         self._logger.logEvent("alarm", description, outcome="raised")
 
+    # Remove an active notification and log that it ended.
     def clearAlarm(self, alarmId: str) -> None:
         """End the named notification after its condition ends; return None.
 
@@ -63,10 +66,12 @@ class FaultHandler:
             del self._alarms[alarmId]
             self._logger.logEvent("alarm_cleared", f"Alarm ended: {alarmId.replace('_', ' ')}.")
 
+    # Return a copy of the notifications currently displayed to the user.
     def getAlarms(self) -> dict[str, str]:
         """Return a copy of alarm ID -> description; caller edits cannot clear alarms."""
         return dict(self._alarms)
 
+    # Register a supported fault once, request locking, enter Fault mode and report it.
     def handleFault(self, faultId: str, description: str) -> bool:
         """Register supported safety faults once per occurrence; inhibit immediately."""
         if faultId not in self._SAFETY_FAULTS:
@@ -82,11 +87,13 @@ class FaultHandler:
         self.reportFault(faultId)
         return True
 
+    # Pass a registered fault's ID and description to the alarm/HMS notification callback.
     def reportFault(self, faultId: str) -> None:
         """Publish a registered fault through the controller's communication boundary."""
         if faultId in self._active:
             self._notify(faultId, self._active[faultId])
 
+    # Remove a fault only after permission and condition-specific recovery checks pass.
     def clearFault(self, faultId: str) -> bool:
         """Clear only for an authorized technician and a verified resolved condition."""
         if not self._can_recover() or faultId not in self._active:
@@ -105,11 +112,13 @@ class FaultHandler:
         self._logger.logEvent("fault_cleared", f"Resolved {faultId}.", outcome="success")
         return True
 
+    # Start the drawer-closure deadline after a successful operation in Normal mode.
     def operationCompleted(self) -> None:
         """Begin closure timing at recorded operation completion in Normal mode."""
         if self._mode.getMode() == "Normal":
             self._closure_deadline = self._clock() + self._timings.cabinet_closure
 
+    # Read reported hardware faults and check whether the drawer-closure deadline has expired.
     def poll(self) -> None:
         """Detect reported hardware failures and unconfirmed closure without sleeping."""
         for fault_id, description in self._hardware.getFaults().items():
@@ -121,10 +130,12 @@ class FaultHandler:
                 self._closure_deadline = None
                 self.handleFault("cabinet_closure", "Cabinet closure was not confirmed before timeout.")
 
+    # Mark the simulated software problem as resolved without clearing its registered fault.
     def resolveSimulatedSoftwareCondition(self) -> None:
         """Test fixture reports that its software condition ended; this does not clear the fault."""
         self._software_resolved = True
 
+    # Perform an authorized simulated restart and mark the software self-check as passed.
     def restartSoftware(self) -> bool:
         """Simulate an authorized service restart, then require a separate recovery check."""
         if not self._can_recover():
@@ -133,10 +144,12 @@ class FaultHandler:
         self._logger.logEvent("maintenance", "Software restarted; self-check passed.", outcome="success")
         return True
 
+    # Return a copy of the registered faults that still need recovery.
     def getFaults(self) -> dict[str, str]:
         """Return a copy of fault ID -> description; caller edits cannot clear faults."""
         return dict(self._active)
 
+    # Group active fault IDs into Hardware, Software and Closure labels.
     def getCategories(self) -> tuple[str, ...]:
         """Fault submodes share the dispensing interlock but have different recovery."""
         categories = set()
@@ -149,6 +162,7 @@ class FaultHandler:
                 categories.add("Hardware")
         return tuple(sorted(categories))
 
+    # Check that faults are absent and drawer closure is positively confirmed.
     def isSafe(self) -> bool:
         """Return True only when no registered/reported faults remain and closure is confirmed."""
         return not self._active and not self._hardware.getFaults() and self._hardware.isClosed() is True

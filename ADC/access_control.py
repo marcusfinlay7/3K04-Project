@@ -43,6 +43,7 @@ class AuthResult:
 
 class AccessControl:
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Load valid IDs and role permissions, then start with no signed-in user.
     def __init__(self, logger: EventLogger, clock: Callable = time.monotonic,
                  timings: Timings = TIMINGS, alarm: Callable = None):
         self._logger = logger
@@ -71,6 +72,7 @@ class AccessControl:
         self._locked_until = None
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # End an expired login lockout and reset the failed-attempt count.
     def tick(self) -> None:
         """Expire the cabinet-wide lockout without depending on HMS availability."""
         if self._locked_until is not None and self._clock() >= self._locked_until:
@@ -78,15 +80,18 @@ class AccessControl:
             self._failures = 0
             self._logger.logEvent("lockout_cleared", "Login lockout expired.")
 
+    # Look up an ID, create a session if valid, or count the failed login.
     def Authenticate(self, userId: str) -> AuthResult:
         """Authenticate a numeric string ID and return immutable AuthResult.
 
         Replaces any old session; logs the attempt. Success sets the mapped role
         and resets failures. Failure grants no session and may start lockout.
         Unknown IDs return success=False; startup configuration errors are raised."""
+        # Start every attempt without carrying over an earlier user's privileges.
         self.logout(record=False)
         self.tick()
         if self._locked_until is not None:
+            # Trying again during lockout neither grants access nor extends its timer.
             reason = "Cabinet login lockout is active."
         else:
             role = None
@@ -99,6 +104,7 @@ class AccessControl:
                 self._logger.setUser(userId)
                 self._logger.logEvent("authentication", f"Signed in as {role}.", outcome="success")
                 return AuthResult(True, self._user, f"Signed in as {role}.")
+            # An unknown ID counts toward the next cabinet-wide lockout.
             self._failures += 1
             reason = "ID not recognised. Check your ID and try again."
             if self._failures >= FAILED_LOGIN_LIMIT:
@@ -112,16 +118,19 @@ class AccessControl:
         self._logger.logEvent("authentication", reason, outcome="denied")
         return AuthResult(False, None, reason)
 
+    # Check that this is the current session and its role allows the action.
     def hasPermission(self, user: User | None, operation: str) -> bool:
         """Only the current session object is trusted; stale/forged users fail."""
         self.tick()
         return (user is not None and user is self._user and self._locked_until is None
                 and operation in self._permissions.get(user.role, set()))
 
+    # Return the signed-in user's identity, or None when logged out.
     def currentUser(self) -> User | None:
         """Return the immutable current User, or None; no session mutation."""
         return self._user
 
+    # Return how many seconds remain before another login is allowed.
     def lockoutRemaining(self) -> float:
         """Return nonnegative seconds remaining; expire a completed lockout."""
         self.tick()
@@ -129,6 +138,7 @@ class AccessControl:
             return max(0.0, self._locked_until - self._clock())
         return 0.0
 
+    # Remove the active session and stop attributing new log entries to that user.
     def logout(self, record: bool = True) -> None:
         """Invalidate the current session and clear audit identity.
 

@@ -26,6 +26,7 @@ from starting_inventory import STARTING_INVENTORY
 
 class InventoryManager:
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Validate and copy the starting medicine records into private inventory storage.
     def __init__(self, records: list[dict] | None = None):
         if records is None:
             records = STARTING_INVENTORY
@@ -50,6 +51,7 @@ class InventoryManager:
             self._records[medication_id] = deepcopy(record)
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Look up the quantity of one known medicine.
     def getStock(self, medicationId: str) -> int:
         """Return recorded quantity for a known string medication ID.
 
@@ -58,6 +60,7 @@ class InventoryManager:
             raise ValueError("Unknown medication identifier.")
         return self._records[medicationId]["quantity"]
 
+    # Look up the display name of one known medicine.
     def getName(self, medicationId: str) -> str:
         """Return the name for a known string medication ID.
 
@@ -66,6 +69,7 @@ class InventoryManager:
             raise ValueError("Unknown medication identifier.")
         return self._records[medicationId]["name"]
 
+    # Check the ID, quantity and stock/capacity limits without changing inventory.
     def validateChange(self, medicationId: str, quantity: int, operation: str) -> str:
         """Return a rejection reason, or empty string; never change stock."""
         if not isinstance(medicationId, str) or medicationId not in self._records:
@@ -83,6 +87,7 @@ class InventoryManager:
             return ""
         return "Unknown inventory operation."
 
+    # Apply a valid confirmed stock addition; reject invalid changes without updating records.
     def addStock(self, medicationId: str, quantity: int) -> bool:
         """Add a positive integer quantity after hardware confirms movement.
 
@@ -93,6 +98,7 @@ class InventoryManager:
         self._records[medicationId]["quantity"] += quantity
         return True
 
+    # Apply a valid confirmed stock removal; reject invalid changes without updating records.
     def removeStock(self, medicationId: str, quantity: int) -> bool:
         """Remove a positive integer quantity after hardware confirms movement.
 
@@ -103,6 +109,7 @@ class InventoryManager:
         self._records[medicationId]["quantity"] -= quantity
         return True
 
+    # Return independent copies of all medicine records for callers to inspect.
     def getRecords(self) -> list[dict]:
         """Return a deep copy of public medicine snapshots.
 
@@ -110,6 +117,7 @@ class InventoryManager:
         stored stock. No input and no state change."""
         return deepcopy(list(self._records.values()))
 
+    # Create a valid new zero-stock medicine record; currently used only by module tests.
     def registerMedication(self, medicationId: str, name: str) -> bool:
         """Create a zero-stock record; return False for invalid/duplicate/full input.
 

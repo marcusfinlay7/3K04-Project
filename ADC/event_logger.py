@@ -27,6 +27,7 @@ from typing import Callable
 
 class EventLogger:
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Start an empty audit history with a clock, no user context and no export destination.
     def __init__(self, wall_clock: Callable = None):
         self._clock = wall_clock or (lambda: datetime.now(timezone.utc))
         self._events = []
@@ -35,14 +36,17 @@ class EventLogger:
         self._export_cursor = 0
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Choose the user ID for subsequent events; None means system or unauthenticated activity.
     def setUser(self, userId: str | None) -> None:
         """Set audit context from the authenticated session, never a credential."""
         self._user_id = userId
 
+    # Connect the public sendLog callback that will receive serialized audit batches.
     def setSender(self, sender: Callable[[str], bool]) -> None:
         """Connect CommunicationLink.sendLog after application composition."""
         self._sender = sender
 
+    # Read the audit clock and return its timestamp, or an explicit unavailable value.
     def timestamp(self) -> str:
         """Keep an unambiguous timestamp internally, including its timezone."""
         try:
@@ -50,6 +54,7 @@ class EventLogger:
         except (OSError, ValueError, AttributeError):
             return "unavailable"
 
+    # Convert a stored timestamp into local date/time with AM/PM and a UTC offset.
     @staticmethod
     def readableTime(timestamp: str) -> str:
         """Display the computer's local clock, with date, AM/PM and UTC offset."""
@@ -61,6 +66,7 @@ class EventLogger:
         offset = offset[:3] + ":" + offset[3:]
         return local_time.strftime("%b %d, %Y  %I:%M:%S %p") + f" (UTC{offset})"
 
+    # Append one structured audit entry with its ID, timestamp, actor and operation details.
     def logEvent(self, eventType: str, description: str, *,
                  outcome: str = "recorded", medicationId: str | None = None,
                  quantityChange: int = 0, export: bool = True) -> bool:
@@ -82,10 +88,12 @@ class EventLogger:
         })
         return True
 
+    # Return a deep copy so callers cannot edit the stored audit history.
     def getEvents(self) -> list[dict]:
         """Return independent records so callers cannot alter the audit trail."""
         return deepcopy(self._events)
 
+    # Combine supplied audit entries into a readable block of text.
     def formatEvents(self, events: list[dict]) -> str:
         """Own the readable audit representation as well as the stored representation."""
         lines = []
@@ -93,6 +101,7 @@ class EventLogger:
             lines.append(self.formatEvent(event))
         return "\n".join(lines)
 
+    # Format one audit entry, including its actor, result and any medicine quantity change.
     def formatEvent(self, event: dict) -> str:
         """Friendly log display; the original event record remains unchanged."""
         actor = "System"
@@ -107,6 +116,7 @@ class EventLogger:
             text += f"  Stock change: {event['quantityChange']:+d}."
         return text + "\n"
 
+    # Label supplied events as cabinet activity or communication for the split log.
     def getDisplayEvents(self, events: list[dict]) -> list[dict]:
         """Convert supplied event snapshots into new display records.
 
@@ -121,10 +131,13 @@ class EventLogger:
                            "text": self.formatEvent(event)})
         return result
 
+    # Send audit entries not yet handed to CommunicationLink; that module owns retries.
     def exportEvents(self) -> bool:
         """Queue new records once; Communication Link owns retries until ACK."""
         if self._sender is None:
             return False
+        # Freeze this batch's end before sending: communication itself adds local
+        # diagnostic events. Those must not recursively generate more log messages.
         end = len(self._events)
         records = [e for e in self._events[self._export_cursor:end] if e["export"]]
         delivered = True

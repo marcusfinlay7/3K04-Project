@@ -22,6 +22,7 @@ from copy import deepcopy
 
 class SimulatedHMS:
     # CONSTRUCTION / PRIVATE STATE: these fields belong to this class only.
+    # Start a connected mock HMS with normal replies and an empty received-message history.
     def __init__(self):
         self._connected = True
         self._next_failure = "none"
@@ -29,6 +30,7 @@ class SimulatedHMS:
         self._received = []
 
     # PUBLIC INTERFACE: callers use these documented operations.
+    # Process one packet and produce the configured normal, missing or incorrect reply.
     def receive(self, message: dict) -> dict | None:
         """Provisional in-process transport: return a typed, matching ACK or None."""
         if not self._connected:
@@ -44,6 +46,8 @@ class SimulatedHMS:
             self._next_failure = "none"
         if failure == "drop_message":
             return None
+        # A dropped message never reaches this history. A dropped ACK still does,
+        # because HMS received the packet even though ADC did not receive confirmation.
         self._received.append(deepcopy(message))
         if failure == "drop_ack" or (heartbeat and self._miss_heartbeats):
             return None
@@ -55,10 +59,12 @@ class SimulatedHMS:
             return {"type": "heartbeat_ack", "messageId": message["id"]}
         return {"type": "ack", "messageId": message["id"]}
 
+    # Connect or disconnect the mock receiver without directly changing ADC health.
     def setConnected(self, connected: bool) -> None:
         """Set the mock transport connection state; does not change ADC availability directly."""
         self._connected = bool(connected)
 
+    # Choose a one-shot failure for the next data message, excluding heartbeat probes.
     def failNextMessage(self, failure: str) -> None:
         """Arm one supported data-message failure; return None.
 
@@ -68,20 +74,24 @@ class SimulatedHMS:
             raise ValueError("Unsupported communication simulation.")
         self._next_failure = failure
 
+    # Enable or disable missing heartbeat replies while allowing data traffic.
     def setMissingHeartbeats(self, enabled: bool) -> None:
         """Enable/disable missing mock heartbeat replies; data traffic is unaffected."""
         self._miss_heartbeats = bool(enabled)
 
+    # Reset the mock connection and reply settings to normal.
     def restore(self) -> None:
         """Restore mock connection and normal replies; does not fabricate ADC acknowledgements."""
         self._connected = True
         self._next_failure = "none"
         self._miss_heartbeats = False
 
+    # Return copies of packets the mock received, including retransmissions.
     def getReceived(self) -> list[dict]:
         """Return deep copies of received packets; editing them cannot change receipt history."""
         return deepcopy(self._received)
 
+    # Return the mock's connection and currently configured failure settings.
     def getStatus(self) -> dict:
         """Return a fresh connected/nextFailure/missingHeartbeats snapshot."""
         return {"connected": self._connected, "nextFailure": self._next_failure,
