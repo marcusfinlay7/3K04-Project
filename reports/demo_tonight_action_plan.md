@@ -4,8 +4,6 @@
 
 **Demo:** Monday, November 2, 2026. **Document submission:** Friday, November 6, 2026.
 
-**Writing status: complete.** The [progress checklist](demo_plan_progress.md) records completion of this planning document. Task checkboxes below remain unchecked because they are work for the group to carry out.
-
 **How to use this detailed file:** start with the master checklist in section 3, then read your assigned section: Deborah in section 4, Emma in section 5, Marcus in section 6. Section 7 is the page-by-page editor's checklist; section 8 is the shared rehearsal. Sections 9 and 14 are reference material, not extra material everyone must memorize tonight. Section 10 explicitly separates work that can wait.
 
 ## 1. What the priorities mean
