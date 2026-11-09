@@ -1,0 +1,23 @@
+Requirement IDs,Precise behaviour or prototype interpretation,Implementing modules,Example callable interface,Status
+FR-CM-01/02/03,Identify and process multiple cabinet messages,protocol.py / monitor.py,MonitoringSystem.receive,Internal simulator implemented; partner interface pending
+FR-CM-04/05,Detect lost heartbeats and record offline/online,cabinet_health.py / storage.py,check_timeouts / observed_message,Implemented and tested
+FR-IS-01/02,Store valid ADC-origin inventory snapshots,inventory_supervision.py / storage.py,apply_inventory / set_inventory,Implemented and tested
+FR-IS-03/04,Show selected cabinet inventory and overview,reporting.py / app.py,detail / overview,Implemented; browser test pending
+FR-IS-05,Flag low-stock items,inventory_supervision.py / alarm_management.py,apply_inventory,Implemented and tested
+FR-AM-01/02/03,Accept and record cabinet alarms,alarm_management.py / monitor.py,receive_alarm,Implemented and tested
+FR-AM-04/05,Show active and historical alarms,reporting.py / storage.py,detail / alarms,Implemented; browser test pending
+FR-AM-06,Role-gated system acknowledgement and ADC-confirmed resolution,alarm_management.py / authentication.py,acknowledge / receive_alarm,Implemented and tested
+FR-HD-01/02,Keep originating cabinet event and timestamp,storage.py,add_event,Implemented and tested
+FR-HD-03/04,Review stored dispense events even while offline,reporting.py / storage.py,detail / history,Implemented and tested
+FR-RE-01/02/03,Generate combined event history report (filtering deferred),reporting.py / app.py,generate_report,Combined report implemented; browser test pending
+FR-OD-01/02/03/04/05,Simple multi-cabinet table with clickable detail,reporting.py / app.py,overview / detail,Implemented; browser test pending
+FR-CH-01/02/03/04/05,Show unknown health whenever cabinet offline,cabinet_health.py / storage.py,mark_offline / check_timeouts,Implemented and tested
+FR-RH-01/02/03,Correlated reply to ADC request,Future Part A boundary,Not implemented,Deferred until Part A interface agreed
+FR-RH-04/05,Return ADC configuration and record requests,Future Part A boundary,Not implemented,Deferred until Part A interface agreed
+NFR-SAF-01/02,Prevent stale health presentation after lost communication,cabinet_health.py,mark_offline,Implemented and tested
+NFR-SEC-01/02,Require operator PIN and enforce action permissions,authentication.py / app.py,authenticate / has_permission,Core tested; browser pending
+NFR-REL-01/02,Keep stored data during outage and log outage,storage.py / cabinet_health.py,history / mark_offline,Implemented and tested
+NFR-AVA-01/02,Continue unaffected ADC and historical access,storage.py / monitor.py,cabinets / history,Implemented and tested
+NFR-PER-01,Process independent incoming updates,monitor.py / storage.py,receive,Small-scale tests only; throughput unmeasured
+NFR-TRA-01/02,Store source/time/event and acknowledgments,storage.py / monitor.py,add_event,Implemented and tested
+NFR-USA-01/02,Consistent active/normal statuses,templates/ / reporting.py,HTML UI,Template syntax checked; browser pending

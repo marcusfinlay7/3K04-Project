@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Sign in | Monitoring{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:460px;margin:55px auto">
+  <h1>Employee sign in</h1>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ session.csrf }}">
+    <label for="employee_id">Employee ID</label>
+    <input id="employee_id" name="employee_id" required autocomplete="username">
+    <label for="pin">PIN</label>
+    <input id="pin" name="pin" type="password" required autocomplete="current-password">
+    <p><button class="primary" type="submit">Sign in</button></p>
+  </form>
+</div>
+{% endblock %}

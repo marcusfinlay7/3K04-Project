@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}{{ cabinet.adc_id }} | Monitoring{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('home') }}">← All cabinets</a></p>
+<h1>{{ cabinet.adc_id }}</h1>
+<p>
+  Connection: <strong>{{ cabinet.connection }}</strong>
+  · Health: <strong>{{ cabinet.health }}</strong>
+  {% if cabinet.needs_sync %} · <strong>Synchronization pending</strong>{% endif %}
+</p>
+
+<h2>Inventory</h2>
+<div class="panel scroll">
+  <table>
+    <thead><tr><th>Medication</th><th>Quantity</th><th>Needs attention</th><th>Updated (Eastern)</th></tr></thead>
+    <tbody>
+      {% for i in inventory %}
+      <tr>
+        <td>{{ i.medication }}</td>
+        <td>{{ i.quantity }}</td>
+        <td>{{ 'YES' if i.low_stock else 'No' }}</td>
+        <td>{{ format_dt(i.updated_at) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Alarms</h2>
+<div class="panel scroll">
+  <table>
+    <thead><tr><th>Alarm</th><th>Category</th><th>Status</th><th>Occurred (Eastern)</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for a in alarms %}
+      <tr>
+        <td>{{ a.description }}<div class="muted">{{ a.alarm_id }}</div></td>
+        <td>{{ a.category }}</td>
+        <td>
+          {{ 'Active' if a.active else 'Resolved' }}
+          {% if a.acknowledged_by %} · Ack. {{ a.acknowledged_by }}{% endif %}
+        </td>
+        <td>{{ format_dt(a.occurred_at) }}</td>
+        <td>
+          {% if a.active and a.category == 'system' and not a.acknowledged_at and can('acknowledge_system_alarm') %}
+          <form method="post" action="{{ url_for('acknowledge', adc_id=a.adc_id, alarm_id=a.alarm_id) }}">
+            <input type="hidden" name="csrf" value="{{ session.csrf }}">
+            <button type="submit">Acknowledge</button>
+          </form>
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if can('view_history') %}
+<h2>Recent cabinet events</h2>
+<div class="panel scroll">
+  <table>
+    <thead><tr><th>Timestamp (Eastern)</th><th>Event</th><th>Details</th><th>Employee</th></tr></thead>
+    <tbody>
+      {% for e in history %}
+      <tr>
+        <td>{{ format_dt(e.occurred_at) }}</td>
+        <td>{{ e.event_type }}</td>
+        <td>{{ e.description }}</td>
+        <td>{{ e.employee_id or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<script>setTimeout(() => location.reload(), 5000);</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Cabinets | Monitoring{% endblock %}
+{% block content %}
+<h1>Cabinet overview</h1>
+<div class="panel scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Cabinet</th>
+        <th>Connection</th>
+        <th>Health</th>
+        <th>Active alarms</th>
+        <th>Low stock items</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cabinets %}
+      <tr>
+        <td><a href="{{ url_for('cabinet', adc_id=c.adc_id) }}"><strong>{{ c.adc_id }}</strong></a></td>
+        <td><span class="pill {{ 'warning' if c.connection!='ONLINE' else '' }}">{{ c.connection }}</span></td>
+        <td><span class="pill {{ 'warning' if c.health=='UNKNOWN' else 'danger' if c.health=='FAULT' else '' }}">{{ c.health }}</span></td>
+        <td>{{ c.active_alarms }}</td>
+        <td>{{ c.low_items }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>setTimeout(() => location.reload(), 5000);</script>
+{% endblock %}

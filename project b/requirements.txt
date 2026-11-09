@@ -1,0 +1,11 @@
+Flask>=3.0,<4.0
+tzdata>=2025.1
+#library installation
+# py -m pip install -r requirements.txt
+
+##main application
+#py app.py --demo
+
+#run the scenarios
+#py app.py --run 01_low_inventory
+#py app.py --run <insert_scenario_name>

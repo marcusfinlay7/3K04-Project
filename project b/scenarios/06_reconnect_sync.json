@@ -1,0 +1,7 @@
+{
+  "name": "Reconnect and synchronize",
+  "adc_id": "ADC-01",
+  "steps": [
+    {"action": "reconnect"}
+  ]
+}
